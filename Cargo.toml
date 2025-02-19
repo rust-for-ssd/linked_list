@@ -11,5 +11,6 @@ riscv = { version = "0.12.1", features = ["critical-section-single-hart"] }
 riscv-semihosting = "0.1.2"
 rv_unit = { git = "https://github.com/rust-for-ssd/rv_unit.git" }
 
-[features]
-rv_test = []
+[lib]
+test = false
+harness = false

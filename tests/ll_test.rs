@@ -1,5 +1,36 @@
-use linked_list::LinkedList;
+// -- Imports and setup ---
+#![no_std]
+#![no_main]
+#![feature(custom_test_frameworks)]
+#![test_runner(rv_unit::test_runner)]
+
+use riscv_rt::entry;
+use core::panic::PanicInfo;
 use rv_unit::Testable;
+
+// -- Custom Panic handler
+#[panic_handler]
+fn panic(info: &PanicInfo) -> ! {
+    rv_unit::test_panic_handler(TEST_SUITE, info)
+}
+
+use embedded_alloc::LlffHeap as Heap;
+#[global_allocator]
+static HEAP: Heap = Heap::empty();
+// -- Run the tests
+#[entry]
+fn main() -> ! {
+    {
+        use core::mem::MaybeUninit;
+        const HEAP_SIZE: usize = 1024;
+        static mut HEAP_MEM: [MaybeUninit<u8>; HEAP_SIZE] = [MaybeUninit::uninit(); HEAP_SIZE];
+        unsafe { HEAP.init(HEAP_MEM.as_ptr() as usize, HEAP_SIZE) }
+    }
+    rv_unit::test_runner(TEST_SUITE);
+    loop {}
+}
+
+use linked_list::LinkedList;
 
 fn test_push() {
     let mut ll: LinkedList<i32> = linked_list::LinkedList::new();
@@ -54,11 +85,10 @@ fn test_len() {
     assert_eq!(ll.len(), 0);
 }
 
-pub fn get_test_suite() -> &'static [&'static dyn Testable] {
+const TEST_SUITE: &[&dyn Testable] =
     &[
         &test_push,
         &test_len,
         &test_ll_eq,
         &test_ll_ne,
-    ]
-}
+    ];
