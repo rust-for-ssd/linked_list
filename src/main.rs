@@ -1,28 +1,26 @@
 #![no_std]
 #![no_main]
 
-#[cfg(not(debug_assertions))]
-extern crate panic_halt;
+#[cfg(feature = "rv_test")]
+mod test_ll;
 
-#[cfg(debug_assertions)]
 #[panic_handler]
 fn panic_handler(info: &core::panic::PanicInfo) -> ! {
+    
+    #[cfg(feature = "rv_test")]
+    return rv_unit::test_panic_handler(test_ll::test_linked_list::get_test_suite(), info);
+
     hprintln!("{}", info);
     debug::exit(debug::EXIT_SUCCESS);
     loop {}
 }
 
-use riscv_semihosting::{debug, hprintln, dbg};
+use riscv_semihosting::{debug, hprintln};
 use riscv_rt::entry;
-
-use linked_list::{self, LinkedList};
-
-
 
 use embedded_alloc::LlffHeap as Heap;
 #[global_allocator]
 static HEAP: Heap = Heap::empty();
-
 
 #[entry]
 fn main() -> ! {
@@ -32,24 +30,14 @@ fn main() -> ! {
         static mut HEAP_MEM: [MaybeUninit<u8>; HEAP_SIZE] = [MaybeUninit::uninit(); HEAP_SIZE];
         unsafe { HEAP.init(HEAP_MEM.as_ptr() as usize, HEAP_SIZE) }
     }
-    let mut ll: LinkedList<i32> = linked_list::LinkedList::new();
-    dbg!(&ll);
-    ll.push_head(1);
-    dbg!(&ll);
-    let el1 = ll.pop_head();
-    dbg!(el1);
-    dbg!(&ll);
 
-    ll.push_tail(1);
-    dbg!(&ll);
-    ll.push_tail(1);
-    dbg!(&ll);
-    let el1 = ll.pop_head();
-    dbg!(el1);
-    dbg!(&ll);
-    let el1 = ll.pop_tail();
-    dbg!(el1);
-    dbg!(&ll);
+    #[cfg(feature = "rv_test")]
+    {
+        // Run the test suite from example module
+        rv_unit::test_runner(test_ll::test_linked_list::get_test_suite());
+    }
+
+    hprintln!("THIS IS CARGO RUN WITHOUT FLAG!");
     debug::exit(debug::EXIT_SUCCESS);
     loop { }
 }
