@@ -7,6 +7,7 @@ fn test_push() {
     assert_eq!(ll.len(), 1);
     assert_eq!(ll.pop_head(), Some(1));
     assert_eq!(ll.len(), 0);
+    assert_eq!(ll.pop_head(), None);
 }
 
 fn test_ll_eq() {

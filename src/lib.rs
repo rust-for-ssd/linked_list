@@ -24,6 +24,12 @@ pub struct Node<T> {
     val: T
 }
 
+impl<T> Drop for LinkedList<T> {
+    fn drop(&mut self) {
+        while let Some(_) = self.pop_head() { }
+    }
+}
+
 impl <T: core::cmp::PartialEq> PartialEq for LinkedList<T> {
     fn eq(&self, other: &LinkedList<T>) -> bool { 
         if self.len() != other.len() {
@@ -71,8 +77,8 @@ impl <T> LinkedList<T> {
     pub fn push_head(&mut self, val: T) {
         let new_head: NonNull<Node<T>> = 
             NonNull::new(Box::into_raw(Box::new(Node {
-                prev: None, 
-                next: None, 
+                prev: None,
+                next: None,
                 val
             }))).expect("Node ptr is null!");
 
@@ -109,56 +115,44 @@ impl <T> LinkedList<T> {
     }
 
     pub fn pop_head_node(&mut self) -> Option<Node<T>> {
-        if let Some(old_head) = self.head {
-            let new_head = unsafe {old_head.as_ref()}.next;
-            self.head = new_head;
-            self.len -= 1;
-            if let Some(new_head) = new_head {
-                unsafe {
-                    (*new_head.as_ptr()).prev = None;
-                }
-            } else {
-                self.tail = None;
+        let old_head = self.head?;
+        let boxed_node = unsafe {Box::from_raw(old_head.as_ptr())};
+        let new_head = boxed_node.next;
+        self.head = new_head;
+        self.len -= 1;
+        if let Some(new_head) = new_head {
+            unsafe {
+                (*new_head.as_ptr()).prev = None;
             }
-            let node = unsafe {old_head.read()};
-            Some(node)
         } else {
-            None
+            self.tail = None;
         }
+        Some(*boxed_node)
     }
 
     pub fn pop_head(&mut self) -> Option<T> {
-        if let Some(head) = self.pop_head_node() {
-            Some(head.val)
-        } else {
-            None
-        }
+        let head = self.pop_head_node()?;
+        Some(head.val)
     }
 
     pub fn pop_tail_node(&mut self) -> Option<Node<T>> {
-        if let Some(old_tail) = self.tail {
-            let new_tail = unsafe {old_tail.as_ref()}.prev;
-            self.tail = new_tail;
-            self.len -= 1;
-            if let Some(new_tail) = new_tail {
-                unsafe {
-                    (*new_tail.as_ptr()).next = None;
-                }
-            } else {
-                self.head = None
+        let old_tail = self.tail?;
+        let boxed_node = unsafe {Box::from_raw(old_tail.as_ptr())};
+        let new_tail = boxed_node.prev;
+        self.tail = new_tail;
+        self.len -= 1;
+        if let Some(new_tail) = new_tail {
+            unsafe {
+                (*new_tail.as_ptr()).next = None;
             }
-            let node = unsafe {old_tail.read()};
-            Some(node)
         } else {
-            None
+            self.head = None
         }
+        Some(*boxed_node)
     }
 
     pub fn pop_tail(&mut self) -> Option<T> {
-        if let Some(tail) = self.pop_tail_node() {
-            Some(tail.val)
-        } else {
-            None
-        }
+        let tail = self.pop_tail_node()?;
+        Some(tail.val)
     }
 }
