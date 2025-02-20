@@ -16,15 +16,18 @@ use embedded_alloc::LlffHeap as Heap;
 #[global_allocator]
 static HEAP: Heap = Heap::empty();
 
+extern "C" {
+    static _heap_size: u8;
+}
+
 use riscv_rt::entry;
 // -- Run the tests
 #[entry]
 fn main() -> ! {
-    {
-        use core::mem::MaybeUninit;
-        const HEAP_SIZE: usize = 1024;
-        static mut HEAP_MEM: [MaybeUninit<u8>; HEAP_SIZE] = [MaybeUninit::uninit(); HEAP_SIZE];
-        unsafe { HEAP.init(HEAP_MEM.as_ptr() as usize, HEAP_SIZE) }
+    unsafe {
+        let heap_bottom = riscv_rt::heap_start() as usize;
+        let heap_size = &_heap_size as *const u8 as usize;
+        HEAP.init(heap_bottom, heap_size)
     }
     #[cfg(test)] test_main();
     loop {}
