@@ -1,22 +1,22 @@
 // -- Imports and setup ---
 #![no_std]
 #![no_main]
+#![reexport_test_harness_main = "test_main"]
 #![feature(custom_test_frameworks)]
 #![test_runner(rv_unit::test_runner)]
 
-use riscv_rt::entry;
-use core::panic::PanicInfo;
-use rv_unit::Testable;
-
-// -- Custom Panic handler
 #[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
-    rv_unit::test_panic_handler(TEST_SUITE, info)
+pub fn panic(info: &core::panic::PanicInfo) -> ! {
+    rv_unit::test_panic_handler(info);
+    test_main();
+    loop {}
 }
 
 use embedded_alloc::LlffHeap as Heap;
 #[global_allocator]
 static HEAP: Heap = Heap::empty();
+
+use riscv_rt::entry;
 // -- Run the tests
 #[entry]
 fn main() -> ! {
@@ -26,12 +26,13 @@ fn main() -> ! {
         static mut HEAP_MEM: [MaybeUninit<u8>; HEAP_SIZE] = [MaybeUninit::uninit(); HEAP_SIZE];
         unsafe { HEAP.init(HEAP_MEM.as_ptr() as usize, HEAP_SIZE) }
     }
-    rv_unit::test_runner(TEST_SUITE);
+    #[cfg(test)] test_main();
     loop {}
 }
 
 use linked_list::LinkedList;
 
+#[test_case]
 fn test_push() {
     let mut ll: LinkedList<i32> = linked_list::LinkedList::new();
     ll.push_head(1);
@@ -41,6 +42,7 @@ fn test_push() {
     assert_eq!(ll.pop_head(), None);
 }
 
+#[test_case]
 fn test_ll_eq() {
     let mut ll_1: LinkedList<i32> = linked_list::LinkedList::new();
     let mut ll_2: LinkedList<i32> = linked_list::LinkedList::new();
@@ -58,6 +60,7 @@ fn test_ll_eq() {
     assert_eq!(ll_1, ll_2);
 }
 
+#[test_case]
 fn test_ll_ne() {
     let mut ll_1: LinkedList<i32> = linked_list::LinkedList::new();
     let mut ll_2: LinkedList<i32> = linked_list::LinkedList::new();
@@ -66,6 +69,7 @@ fn test_ll_ne() {
     assert_ne!(ll_1, ll_2);
 }
 
+#[test_case]
 fn test_len() {
     let mut ll: LinkedList<i32> = linked_list::LinkedList::new();
     assert_eq!(ll.len(), 0);
@@ -84,11 +88,3 @@ fn test_len() {
     ll.pop_tail();
     assert_eq!(ll.len(), 0);
 }
-
-const TEST_SUITE: &[&dyn Testable] =
-    &[
-        &test_push,
-        &test_len,
-        &test_ll_eq,
-        &test_ll_ne,
-    ];
