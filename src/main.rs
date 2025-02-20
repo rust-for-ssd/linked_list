@@ -40,14 +40,14 @@ fn main() -> ! {
     dbg!(el1);
     dbg!(&ll);
 
-    ll.push_tail(1);
+    ll.push_tail(2);
     dbg!(&ll);
-    ll.push_tail(1);
+    ll.push_tail(3);
     dbg!(&ll);
-    let el1 = ll.pop_head();
+    let el1 = ll.pop_node_head();
     dbg!(el1);
     dbg!(&ll);
-    let el1 = ll.pop_tail();
+    let el1 = ll.pop_node_tail();
     dbg!(el1);
     dbg!(&ll);
     debug::exit(debug::EXIT_SUCCESS);

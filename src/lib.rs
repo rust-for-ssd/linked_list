@@ -15,6 +15,7 @@ pub struct LinkedList<T> {
 
 type Link<T> = Option<*mut Node<T>>;
 
+#[derive(Debug)]
 pub struct Node<T> {
     prev: Link<T>,
     next: Link<T>,
@@ -48,7 +49,7 @@ impl <T> LinkedList<T> {
         let node_ptr: *mut Node<T> = Box::into_raw(Box::new(Node {prev: None, next: None, val}));
         if let Some(tail) = self.tail {
             unsafe {
-            (*tail).prev = Some(node_ptr);
+            (*tail).next = Some(node_ptr);
             (*node_ptr).prev = Some(tail);
             }
         } else {
@@ -85,4 +86,36 @@ impl <T> LinkedList<T> {
             None
         }
     }
+
+    pub fn pop_node_head(&mut self) -> Option<Node<T>> {
+        if let Some(head) = self.head {
+            let res: Node<T> = unsafe {*head.clone()};
+            let head = unsafe {Box::from_raw(head)};
+            self.head = (*head).next;
+            self.len -= 1;
+            if let Some(new_head) = self.head {
+                unsafe {(*new_head).prev = None;}
+            } else {
+                self.tail = None;
+            }
+            Some(res)
+        } else {
+            None
+        }
+    }
+
+    pub fn pop_node_tail(&mut self) -> Option<Node<T>> {
+        if let Some(tail) = self.tail {
+            let tail = unsafe {Box::from_raw(tail)};
+            self.tail = (*tail).prev;
+            self.len -= 1;
+            if self.len == 0 {
+                self.head = None;
+            }
+            Some(*tail)
+        } else {
+            None
+        }
+    }
+
 }
